@@ -1,0 +1,67 @@
+import numpy as np
+
+class ARTNetwork:
+    def __init__(self, input_size, rho, gamma):
+        self.M = 0
+        self.N = input_size
+        self.V = np.zeros((0, input_size))
+        self.W = np.zeros((0, input_size + 1))
+        self.rho = rho
+        self.gamma = gamma
+
+    def normalize_vector(self, vector):
+        norm = np.linalg.norm(vector)
+        if norm == 0:
+            return vector
+        return vector / norm
+
+    def calculate_V_star(self, E):
+        N = len(E)
+        sigma = np.sum([self.V[i].dot(E) for i in range(self.M)])
+        V_star = self.gamma + sigma / N
+        return V_star
+
+    def update_network(self, E):
+        E = self.normalize_vector(E)
+
+        similarities = [E.dot(self.V[i]) / np.sum(self.V[i]) for i in range(self.M)]
+
+        max_similarity = np.max(similarities)
+        max_index = np.argmax(similarities)
+
+        if max_similarity >= self.rho:
+            V_star = self.calculate_V_star(E)
+            self.V[max_index] = E * V_star
+        else:
+            V_star = self.calculate_V_star(E)
+            self.V = np.vstack((self.V, E * V_star))
+            self.W = np.vstack((self.W, np.zeros(self.N + 1)))
+            self.W[-1][-1] = 0.28
+
+            self.M += 1
+
+# Crear instancia de ARTNetwork
+input_size = 4
+rho = 0.8
+gamma = 0.5
+network = ARTNetwork(input_size, rho, gamma)
+
+# Vectores de entrada (figuras)
+shapes = [
+    [1, 1, 0, 0],
+    [0, 0, 1, 1],
+    [1, 1, 1, 0],
+    [0, 1, 0, 1],
+    [1, 0, 1, 0]
+]
+
+# Entrenar la red con las figuras
+for shape in shapes:
+    network.update_network(np.array(shape))
+
+# Imprimir matrices de pesos
+print("Matriz V:")
+print(network.V)
+print("Matriz W:")
+print(network.W)
+
